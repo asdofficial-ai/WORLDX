@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>WORLDX — Open World</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101820;color:#fff;font-family:Arial,sans-serif}canvas{display:block}
+#top{position:fixed;z-index:3;top:14px;left:14px;background:#07111dcc;border:1px solid #ffffff26;border-radius:12px;padding:10px 13px;font-size:12px;line-height:1.6;pointer-events:none}#top b{font-size:17px;letter-spacing:2px}#hint{position:fixed;z-index:3;top:14px;right:14px;background:#07111dcc;border:1px solid #ffffff26;border-radius:10px;padding:9px 12px;font-size:11px;line-height:1.6;text-align:right;pointer-events:none}#toast{position:fixed;z-index:4;bottom:110px;left:50%;transform:translateX(-50%);background:#07111de8;border:1px solid #ffffff33;padding:11px 16px;border-radius:10px;font-size:13px;display:none;white-space:nowrap}
+#mobile{position:fixed;z-index:5;bottom:18px;left:15px;right:15px;display:none;justify-content:space-between;align-items:end;pointer-events:none}.cluster{display:grid;grid-template-columns:48px 48px 48px;grid-template-rows:48px 48px;gap:5px;pointer-events:auto}.cluster button,.actions button{border:1px solid #ffffff55;background:#07111dcc;color:#fff;border-radius:12px;font-weight:bold;touch-action:none}.cluster button{font-size:19px}.cluster #f{grid-column:2}.cluster #l{grid-column:1;grid-row:2}.cluster #b{grid-column:2;grid-row:2}.cluster #r{grid-column:3;grid-row:2}.actions{display:flex;gap:7px;pointer-events:auto}.actions button{padding:13px 12px;font-size:11px}
+#cross{position:fixed;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);font-size:18px;color:#ffffffa0;pointer-events:none}
+@media(pointer:coarse){#mobile{display:flex}#hint{display:none}}
+</style></head><body>
+<div id="top"><b>WORLDX</b><br>OPEN WORLD PROTOTYPE <span id="ver">v0.3</span><br><span id="place">Central District</span></div>
+<div id="hint">WASD / arrows — move<br>Mouse — look around<br>SHIFT — run · SPACE — jump<br>E — enter / leave building</div><div id="cross">+</div><div id="toast"></div>
+<div id="mobile"><div class="cluster"><button id="f">▲</button><button id="l">◀</button><button id="b">▼</button><button id="r">▶</button></div><div class="actions"><button id="jump">JUMP</button><button id="use">ENTER</button></div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9abbd0);scene.fog=new THREE.Fog(0x9abbd0,100,430);
+const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,900);
+const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xddeeff,0x53604a,1.8));const sun=new THREE.DirectionalLight(0xffedcf,2.1);sun.position.set(100,150,80);scene.add(sun);
+const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.88});const groundMat=mat(0x526b4c),roadMat=mat(0x292e34),sideMat=mat(0x999b96),glass= new THREE.MeshStandardMaterial({color:0x7faabd,metalness:.25,roughness:.28}),lineMat=mat(0xd8d2ad);
+const cube=new THREE.BoxGeometry(1,1,1);
+function box(parent,x,y,z,w,h,d,m){const o=new THREE.Mesh(cube,m);o.position.set(x,y,z);o.scale.set(w,h,d);parent.add(o);return o}
+box(scene,0,-.7,0,1000,1,1000,groundMat);
+const city=[],trees=[];
+let seed=81;function rnd(){seed=(seed*16807)%2147483647;return(seed-1)/2147483646}
+function building(x,z,w,d,h,n){const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);const palette=[0xb4afa5,0x777f87,0xb39d82,0x77736d,0x999b9a,0x9c887d];const wall=mat(palette[n%palette.length]);box(g,0,h/2,0,w,h,d,wall);
+const floors=Math.min(12,Math.floor(h/3));for(let y=2;y<h-1;y+=3){for(let xx=-w/2+1.2;xx<w/2-.5;xx+=2.8){box(g,xx,y,-d/2-.02,1.1,1.25,.05,glass);box(g,xx,y,d/2+.02,1.1,1.25,.05,glass)}for(let zz=-d/2+1.2;zz<d/2-.5;zz+=2.8){box(g,-w/2-.02,y,zz,.05,1.25,1.1,glass);box(g,w/2+.02,y,zz,.05,1.25,1.1,glass)}}
+box(g,0,1.1,-d/2-.09,1.7,2.2,.12,mat(0x30343a));box(g,0,2.35,-d/2-.1,2,.14,.15,mat(0xe0d9c9));
+city.push({x,z,w,d,h,g});return g}
+for(let i=-8;i<=8;i++){let p=i*32;box(scene,p,-.04,0,10,.12,1000,roadMat);box(scene,0,-.04,p,1000,.12,10,roadMat);box(scene,p+6,.02,0,2,.1,1000,sideMat);box(scene,0,.02,p+6,1000,.1,2,sideMat)}
+for(let x=-7;x<=7;x++)for(let z=-7;z<=7;z++){if(Math.abs(x)<1&&Math.abs(z)<1)continue;if(rnd()<.12)continue;building(x*32+16,z*32+16,12+rnd()*8,12+rnd()*8,10+rnd()*48,Math.floor(rnd()*6))}
+function tree(x,z,s=1){box(scene,x,s,z,.45*s,2*s,.45*s,mat(0x67452c));let crown=new THREE.Mesh(new THREE.SphereGeometry(1.7*s,7,6),mat(0x28653b));crown.position.set(x,2.6*s,z);scene.add(crown)}
+// park and water feature
+box(scene,-75,.05,-75,48,.2,48,mat(0x3e7041));let water=new THREE.Mesh(new THREE.CircleGeometry(12,32),new THREE.MeshStandardMaterial({color:0x287ea0,roughness:.25}));water.rotation.x=-Math.PI/2;water.position.set(-75,.18,-75);scene.add(water);for(let i=0;i<24;i++)tree(-96+rnd()*42,-96+rnd()*42,.7+rnd()*.5);
+// Street lamps
+for(let i=-8;i<=8;i++)for(let j=-8;j<=8;j++){if((i+j)%3===0){let x=i*32+9,z=j*32+9;box(scene,x,3,z,.18,6,.18,mat(0x30353a));box(scene,x+.7,5.8,z,1.5,.15,.15,mat(0x30353a));box(scene,x+1.35,5.65,z,.45,.25,.35,mat(0xffe6a3))}}
+// Interior room, reusable
+const room=new THREE.Group();scene.add(room);room.visible=false;
+const wallMat=mat(0xd7d0c2),floorMat=mat(0x827d73);
+box(room,0,-.1,0,18,.3,18,floorMat);box(room,0,5,-9,18,10,.3,wallMat);box(room,-9,5,0,.3,10,18,wallMat);box(room,9,5,0,.3,10,18,wallMat);box(room,0,5,9,18,10,.3,wallMat);
+box(room,-5,2.5,0,.25,5,18,wallMat);box(room,5,2.5,-4,.25,5,10,wallMat);
+box(room,-2,.6,-5,3,1.2,2,mat(0x76543d));box(room,6,.5,5,2,1,2,mat(0x5e4939));box(room,-6,.5,5,2,1,2,mat(0x5e4939));
+for(let i=0;i<7;i++)box(room,6-i*.55,.35+i*.42,-1+i*.75,2.8,.7+i*.84,1.1,mat(0x8c8172));
+const player={x:0,y:1.7,z:14};let yaw=0,pitch=0,vy=0,inside=false,active=null,near=null,clock=0;
+const keys={};function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2300)}
+function enter(){if(inside){leave();return}if(!near){toast('Move closer to a marked building entrance');return}active=near;inside=true;room.visible=true;city.forEach(b=>b.g.visible=false);player.x=0;player.z=6;player.y=1.7;yaw=0;pitch=0;document.getElementById('place').textContent='Building Interior';toast('Entered building — press E to return outside')}
+function leave(){inside=false;room.visible=false;city.forEach(b=>b.g.visible=true);player.x=active.x;player.z=active.z-active.d/2-4;player.y=1.7;active=null;document.getElementById('place').textContent='Central District';toast('Back on the street')}
+document.getElementById('use').onclick=enter;document.getElementById('jump').onclick=()=>{if(player.y<=1.71)vy=7};
+const binds={f:'w',b:'s',l:'a',r:'d'};for(const [id,k] of Object.entries(binds)){const e=document.getElementById(id);e.addEventListener('pointerdown',ev=>{ev.preventDefault();keys[k]=true});['pointerup','pointercancel','pointerleave'].forEach(v=>e.addEventListener(v,()=>keys[k]=false))}
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e')enter();if(e.code==='Space'&&player.y<=1.71)vy=7});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+let dragging=false,lx=0,ly=0;renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){dragging=true;lx=e.clientX;ly=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)}});renderer.domElement.addEventListener('pointerup',()=>dragging=false);renderer.domElement.addEventListener('pointermove',e=>{if(!dragging)return;yaw-=(e.clientX-lx)*.004;pitch=Math.max(-1.35,Math.min(1.35,pitch-(e.clientY-ly)*.004));lx=e.clientX;ly=e.clientY});
+function collides(x,z){if(inside)return Math.abs(x)>8||Math.abs(z)>8;for(const b of city){if(Math.abs(x-b.x)<b.w/2+1&&Math.abs(z-b.z)<b.d/2+1){if(Math.abs(x-b.x)<1.2&&z<b.z-b.d/2+2&&z>b.z-b.d/2-2)continue;return true}}return false}
+function update(dt){let dx=0,dz=0;if(keys.w||keys.arrowup)dz-=1;if(keys.s||keys.arrowdown)dz+=1;if(keys.a||keys.arrowleft)dx-=1;if(keys.d||keys.arrowright)dx+=1;let len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;let speed=(keys.shift?15:8)*dt;let mx=(dx*Math.cos(yaw)-dz*Math.sin(yaw))*speed,mz=(dz*Math.cos(yaw)+dx*Math.sin(yaw))*speed;if(!collides(player.x+mx,player.z))player.x+=mx;if(!collides(player.x,player.z+mz))player.z+=mz;vy-=18*dt;player.y+=vy*dt;if(player.y<1.7){player.y=1.7;vy=0}near=null;if(!inside){let best=5;for(const b of city){let d=Math.hypot(player.x-b.x,player.z-(b.z-b.d/2));if(d<best){best=d;near=b}}}camera.position.set(player.x,player.y,player.z);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);document.getElementById('place').textContent=inside?'Building Interior':near?'Building Entrance':'Central District'}
+function animate(t){requestAnimationFrame(animate);let dt=Math.min((t-(clock||t))/1000,.04);clock=t;let daylight=.65+.35*Math.sin(t*.000025);sun.intensity=.4+daylight*1.8;scene.background.setHSL(.56,.3,.3+daylight*.35);update(dt);renderer.render(scene,camera)}requestAnimationFrame(animate);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+toast('WORLDX ready — explore the city');
+</script></body></html>
